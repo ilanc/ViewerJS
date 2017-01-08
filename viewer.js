@@ -91,7 +91,11 @@ function Viewer(viewerPlugin, parameters) {
             pluginURL = viewerPlugin.getPluginURL();
         }
 
-        // Create dialog
+        // Create about dialog
+        aboutDialogCentererTable = document.getElementById('aboutDialogCentererTable');
+        if (aboutDialogCentererTable) {
+            dialogOverlay.removeChild(aboutDialogCentererTable);
+        }
         aboutDialogCentererTable = document.createElement('div');
         aboutDialogCentererTable.id = "aboutDialogCentererTable";
         aboutDialogCentererCell = document.createElement('div');
@@ -105,7 +109,7 @@ function Viewer(viewerPlugin, parameters) {
             (viewerPlugin ? ("<p>Using the <a href = \""+ pluginURL + "\" target=\"_blank\">" + pluginName + "</a> " +
                             "(<span id = \"pluginVersion\">" + pluginVersion + "</span>) " +
                             "plugin to show you this document.</p>")
-                         : "") +
+                        : "") +
             "<p>Version " + version + "</p>" +
             "<p>Supported by <a href=\"https://nlnet.nl\" target=\"_blank\"><br><img src=\"images\/nlnet.png\" width=\"160\" height=\"60\" alt=\"NLnet Foundation\"></a></p>" +
             "<p>Made by <a href=\"http://kogmbh.com\" target=\"_blank\"><br><img src=\"images\/kogmbh.png\" width=\"172\" height=\"40\" alt=\"KO GmbH\"></a></p>" +
@@ -114,22 +118,22 @@ function Viewer(viewerPlugin, parameters) {
         aboutDialogCentererTable.appendChild(aboutDialogCentererCell);
         aboutDialogCentererCell.appendChild(aboutDialog);
 
+        // Attach events
+        document.getElementById('aboutDialogCloseButton').addEventListener('click', hideAboutDialog);
+
         // Create button to open dialog that says "ViewerJS"
-        aboutButton = document.createElement('button');
-        aboutButton.id = "about";
-        aboutButton.className = "toolbarButton textButton about";
-        aboutButton.title = "About";
-        aboutButton.innerHTML = "ViewerJS"
-        toolbarRight.appendChild(aboutButton);
+        aboutButton = document.getElementById('about');
+        if (!aboutButton) {
+            aboutButton = document.createElement('button');
+            aboutButton.id = "about";
+            aboutButton.className = "toolbarButton textButton about";
+            aboutButton.title = "About";
+            aboutButton.innerHTML = "ViewerJS"
+            toolbarRight.appendChild(aboutButton);
 
-        // Attach events to the above
-        aboutButton.addEventListener('click', function () {
-                showAboutDialog();
-        });
-        document.getElementById('aboutDialogCloseButton').addEventListener('click', function () {
-                hideAboutDialog();
-        });
-
+            // Attach events
+            aboutButton.addEventListener('click', showAboutDialog);
+        }
     }
 
     function showAboutDialog() {
@@ -672,3 +676,62 @@ function Viewer(viewerPlugin, parameters) {
 
     init();
 }
+
+function API() {
+    /*
+     * Example code to load a local pdf file and display it in viewerjs
+     *
+    
+    <form>
+        <input id="fileUpload" type="file"></input>
+    </form>
+    <div style="height:500px;">
+        <iframe id="viewerjs" src="index.html" width="100%" height="100%" scrolling="auto" allowfullscreen="allowfullscreen" webkitallowfullscreen="webkitallowfullscreen"></iframe>
+    </div>
+
+    $("#fileUpload").on('change', function() {
+            var countFiles = $('#fileUpload')[0].files.length;
+            var pdfName = $('#fileUpload')[0].value;
+            if (typeof(FileReader) != "undefined") {
+                for (var i = 0; i < countFiles; i++) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var arrayBuf = e.target.result;
+                        LoadLocalPdf(pdfName, arrayBuf);
+                    }
+                    reader.readAsArrayBuffer($('#fileUpload')[0].files[i]);
+                }
+            } else {
+                alert("This browser does not support FileReader.");
+            }
+        });
+    }
+
+    function LoadLocalPdf(pdfName, arrayBuf) {
+        var iframe = document.getElementById("viewerjs").contentWindow;
+        iframe.postMessage({
+            pdfName: pdfName.replace(/^.*[\\\/]/, ''), // strip c:\fakepath\
+            arrayBuf: arrayBuf
+        }, "*");
+    }
+    */
+
+    function receiveMessage (evt) {
+        if (evt.data.pdfName) LoadLocalPdf(evt.data.pdfName, evt.data.arrayBuf);
+    }
+
+    function LoadLocalPdf(pdfName, arrayBuf) {
+        new Viewer(new PDFViewerPlugin(), {
+            documentUrl: new Uint8Array(arrayBuf),
+            title: pdfName
+        });
+    }
+
+    if (window.addEventListener) {
+        window.addEventListener("message", receiveMessage, false);
+    } else {
+        // IE
+        window.attachEvent("onmessage", receiveMessage);
+    }
+}
+API();
